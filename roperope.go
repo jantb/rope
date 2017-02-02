@@ -1,41 +1,38 @@
 package rope
 
-import (
-	"math"
-	"unicode/utf8"
-)
+import "math"
 
-type Rope struct {
+type RopeRope struct {
 	height   int
 	weight   int
-	left     *Rope
-	right    *Rope
-	content  []byte
+	left     *RopeRope
+	right    *RopeRope
+	content  []Rope
 	balanced bool
 }
 
-var MaxLengthPerNode = 128
+var MaxLengthPerNodeRope = 128
 
 // NewFromBytes genearte new rope from bytes
-func NewFromBytes(bs []byte) (ret *Rope) {
+func NewFromBytesRope(bs []Rope) (ret *RopeRope) {
 	if len(bs) == 0 {
 		return nil
 	}
-	slots := make([]*Rope, 32)
+	slots := make([]*RopeRope, 32)
 	var slotIndex int
-	var r *Rope
-	for blockIndex := 0; blockIndex < len(bs)/MaxLengthPerNode; blockIndex++ {
-		r = &Rope{
+	var r *RopeRope
+	for blockIndex := 0; blockIndex < len(bs)/MaxLengthPerNodeRope; blockIndex++ {
+		r = &RopeRope{
 			height:   1,
-			weight:   MaxLengthPerNode,
-			content:  bs[blockIndex*MaxLengthPerNode : (blockIndex+1)*MaxLengthPerNode],
+			weight:   MaxLengthPerNodeRope,
+			content:  bs[blockIndex*MaxLengthPerNodeRope : (blockIndex+1)*MaxLengthPerNodeRope],
 			balanced: true,
 		}
 		slotIndex = 0
 		for slots[slotIndex] != nil {
-			r = &Rope{
+			r = &RopeRope{
 				height:   slotIndex + 2,
-				weight:   (1 << uint(slotIndex)) * MaxLengthPerNode,
+				weight:   (1 << uint(slotIndex)) * MaxLengthPerNodeRope,
 				left:     slots[slotIndex],
 				right:    r,
 				balanced: true,
@@ -45,9 +42,9 @@ func NewFromBytes(bs []byte) (ret *Rope) {
 		}
 		slots[slotIndex] = r
 	}
-	tailStart := len(bs) / MaxLengthPerNode * MaxLengthPerNode
+	tailStart := len(bs) / MaxLengthPerNodeRope * MaxLengthPerNodeRope
 	if tailStart < len(bs) {
-		ret = &Rope{
+		ret = &RopeRope{
 			height:   1,
 			weight:   len(bs) - tailStart,
 			content:  bs[tailStart:],
@@ -66,8 +63,8 @@ func NewFromBytes(bs []byte) (ret *Rope) {
 	return
 }
 
-// Index returns byt at index
-func (r *Rope) Index(i int) byte {
+// Index returns rope at index
+func (r *RopeRope) Index(i int) Rope {
 	if i >= r.weight {
 		return r.right.Index(i - r.weight)
 	}
@@ -79,7 +76,7 @@ func (r *Rope) Index(i int) byte {
 }
 
 // Len returns the length of the rope
-func (r *Rope) Len() int {
+func (r *RopeRope) Len() int {
 	if r == nil {
 		return 0
 	}
@@ -87,19 +84,23 @@ func (r *Rope) Len() int {
 }
 
 // Bytes return all the bytes in the rope
-func (r *Rope) Bytes() []byte {
+func (r *RopeRope) Bytes() []byte {
 	ret := make([]byte, r.Len())
 	i := 0
-	r.Iter(0, func(bs []byte) bool {
-		copy(ret[i:], bs)
-		i += len(bs)
+	r.Iter(0, func(bs []Rope) bool {
+		for _, r := range bs {
+			copy(ret[i:], r.Bytes())
+			i += len(r.Bytes())
+		}
+
 		return true
 	})
 	return ret
 }
 
-func (r *Rope) Concat(r2 *Rope) (ret *Rope) {
-	ret = &Rope{
+// Concat concatinates two roperopes
+func (r *RopeRope) Concat(r2 *RopeRope) (ret *RopeRope) {
+	ret = &RopeRope{
 		weight: r.Len(),
 		left:   r,
 		right:  r2,
@@ -118,7 +119,7 @@ func (r *Rope) Concat(r2 *Rope) (ret *Rope) {
 	ret.height++
 	// check and rebalance
 	if !ret.balanced {
-		l := int((math.Ceil(math.Log2(float64((ret.Len()/MaxLengthPerNode)+1))) + 1) * 1.5)
+		l := int((math.Ceil(math.Log2(float64((ret.Len()/MaxLengthPerNodeRope)+1))) + 1) * 1.5)
 		if ret.height > l {
 			ret = ret.rebalance()
 		}
@@ -126,31 +127,31 @@ func (r *Rope) Concat(r2 *Rope) (ret *Rope) {
 	return
 }
 
-func (r *Rope) rebalance() (ret *Rope) {
-	var currentBytes []byte
-	slots := make([]*Rope, 32)
-	r.iterNodes(func(node *Rope) bool {
-		var balancedNode *Rope
+func (r *RopeRope) rebalance() (ret *RopeRope) {
+	var currentBytes []Rope
+	slots := make([]*RopeRope, 32)
+	r.iterNodes(func(node *RopeRope) bool {
+		var balancedNode *RopeRope
 		iterSubNodes := true
 		if len(currentBytes) == 0 && node.balanced { // balanced, insert to slots
 			balancedNode = node
 			iterSubNodes = false
 		} else { // collect bytes
 			currentBytes = append(currentBytes, node.content...)
-			if len(currentBytes) >= MaxLengthPerNode { // a full leaf
-				balancedNode = &Rope{
+			if len(currentBytes) >= MaxLengthPerNodeRope { // a full leaf
+				balancedNode = &RopeRope{
 					height:   1,
-					weight:   MaxLengthPerNode,
+					weight:   MaxLengthPerNodeRope,
 					balanced: true,
-					content:  currentBytes[:MaxLengthPerNode],
+					content:  currentBytes[:MaxLengthPerNodeRope],
 				}
-				currentBytes = currentBytes[MaxLengthPerNode:]
+				currentBytes = currentBytes[MaxLengthPerNodeRope:]
 			}
 		}
 		if balancedNode != nil {
 			slotIndex := balancedNode.height - 1
 			for slots[slotIndex] != nil {
-				balancedNode = &Rope{
+				balancedNode = &RopeRope{
 					height:   balancedNode.height + 1,
 					weight:   slots[slotIndex].Len(),
 					left:     slots[slotIndex],
@@ -165,7 +166,7 @@ func (r *Rope) rebalance() (ret *Rope) {
 		return iterSubNodes
 	})
 	if len(currentBytes) > 0 {
-		ret = &Rope{
+		ret = &RopeRope{
 			height:   1,
 			weight:   len(currentBytes),
 			balanced: false,
@@ -184,7 +185,7 @@ func (r *Rope) rebalance() (ret *Rope) {
 	return
 }
 
-func (r *Rope) Split(n int) (out1, out2 *Rope) {
+func (r *RopeRope) Split(n int) (out1, out2 *RopeRope) {
 	if r == nil {
 		return
 	}
@@ -192,10 +193,10 @@ func (r *Rope) Split(n int) (out1, out2 *Rope) {
 		if n > len(r.content) { // offset overflow
 			n = len(r.content)
 		}
-		out1 = NewFromBytes(r.content[:n])
-		out2 = NewFromBytes(r.content[n:])
+		out1 = NewFromBytesRope(r.content[:n])
+		out2 = NewFromBytesRope(r.content[n:])
 	} else { // non leaf
-		var r1 *Rope
+		var r1 *RopeRope
 		if n >= r.weight { // at right subtree
 			r1, out2 = r.right.Split(n - r.weight)
 			out1 = r.left.Concat(r1)
@@ -207,37 +208,36 @@ func (r *Rope) Split(n int) (out1, out2 *Rope) {
 	return
 }
 
-func (r *Rope) Insert(n int, bs []byte) *Rope {
+func (r *RopeRope) Insert(n int, bs []Rope) *RopeRope {
 	r1, r2 := r.Split(n)
-	return r1.Concat(NewFromBytes(bs)).Concat(r2)
+	return r1.Concat(NewFromBytesRope(bs)).Concat(r2)
 }
 
-func (r *Rope) Delete(n, l int) *Rope {
+func (r *RopeRope) Delete(n, l int) *RopeRope {
 	r1, r2 := r.Split(n)
 	_, r2 = r2.Split(l)
 	return r1.Concat(r2)
 }
 
 // Sub returns a substring of the rope
-func (r *Rope) Sub(n, l int) []byte {
-	ret := make([]byte, l)
-	i := 0
-	r.Iter(n, func(bs []byte) bool {
-		if l >= len(bs) {
-			copy(ret[i:], bs)
-			i += len(bs)
-			l -= len(bs)
-			return true
-		} else {
-			copy(ret[i:], bs[:l])
-			i += l
-			return false
-		}
-	})
-	return ret[:i]
-}
+// func (r *RopeRope) Sub(n, l int) []Rope {
+// 	ret := make([]byte, l)
+// 	i := 0
+// 	r.Iter(n, func(bs []Rope) bool {
+// 		if l >= len(bs) {
+// 			copy(ret[i:], bs)
+// 			i += len(bs)
+// 			l -= len(bs)
+// 			return true
+// 		}
+// 		copy(ret[i:], bs[:l])
+// 		i += l
+// 		return false
+// 	})
+// 	return ret[:i]
+// }
 
-func (r *Rope) Iter(offset int, fn func([]byte) bool) bool {
+func (r *RopeRope) Iter(offset int, fn func([]Rope) bool) bool {
 	if r == nil {
 		return true
 	}
@@ -264,7 +264,7 @@ func (r *Rope) Iter(offset int, fn func([]byte) bool) bool {
 	return true
 }
 
-func (r *Rope) IterBackward(offset int, fn func([]byte) bool) bool {
+func (r *RopeRope) IterBackward(offset int, fn func([]Rope) bool) bool {
 	if r == nil {
 		return true
 	}
@@ -273,7 +273,7 @@ func (r *Rope) IterBackward(offset int, fn func([]byte) bool) bool {
 		if len(content) == 0 {
 			return true
 		}
-		bs := reversedBytes(content)
+		bs := reversedRopes(content)
 		if !fn(bs) {
 			return false
 		}
@@ -294,7 +294,7 @@ func (r *Rope) IterBackward(offset int, fn func([]byte) bool) bool {
 	return true
 }
 
-func (r *Rope) iterNodes(fn func(*Rope) bool) {
+func (r *RopeRope) iterNodes(fn func(*RopeRope) bool) {
 	if r == nil {
 		return
 	}
@@ -304,33 +304,10 @@ func (r *Rope) iterNodes(fn func(*Rope) bool) {
 	}
 }
 
-func (r *Rope) IterRune(offset int, fn func(rune, int) bool) {
-	var bs []byte
-	stopped := false
-	r.Iter(offset, func(slice []byte) bool {
+func (r *RopeRope) IterRune(offset int, fn func(rune, int) bool) {
+	var bs []Rope
+	r.Iter(offset, func(slice []Rope) bool {
 		bs = append(bs, slice...)
-		for len(bs) >= 4 {
-			ru, l := utf8.DecodeRune(bs)
-			bs = bs[l:]
-			if ru == utf8.RuneError {
-				return false
-			}
-			if !fn(ru, l) {
-				stopped = true
-				return false
-			}
-		}
 		return true
 	})
-	if !stopped && len(bs) > 0 {
-		for {
-			ru, l := utf8.DecodeRune(bs)
-			bs = bs[l:]
-			if ru != utf8.RuneError {
-				fn(ru, l)
-			} else {
-				break
-			}
-		}
-	}
 }
