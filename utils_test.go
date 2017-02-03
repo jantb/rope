@@ -55,21 +55,6 @@ func TestStructEqual(t *testing.T) {
 	}
 }
 
-func TestDump(t *testing.T) {
-	r := &Rope{
-		weight: 3,
-		left: &Rope{
-			weight:  3,
-			content: []byte("foo"),
-		},
-		right: &Rope{
-			weight:  4,
-			content: []byte("barr"),
-		},
-	}
-	r.Dump()
-}
-
 func TestReversedBytes(t *testing.T) {
 	if !bytes.Equal(reversedBytes(nil), nil) {
 		t.Fatal()

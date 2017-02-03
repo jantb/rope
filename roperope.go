@@ -14,7 +14,7 @@ type RopeRope struct {
 var MaxLengthPerNodeRope = 128
 
 // NewFromBytes genearte new rope from bytes
-func NewFromBytesRope(bs []Rope) (ret *RopeRope) {
+func NewFromRope(bs []Rope) (ret *RopeRope) {
 	if len(bs) == 0 {
 		return nil
 	}
@@ -85,12 +85,22 @@ func (r *RopeRope) Len() int {
 
 // Bytes return all the bytes in the rope
 func (r *RopeRope) Bytes() []byte {
-	ret := make([]byte, r.Len())
 	i := 0
+	l := 0
 	r.Iter(0, func(bs []Rope) bool {
 		for _, r := range bs {
-			copy(ret[i:], r.Bytes())
-			i += len(r.Bytes())
+			l += r.Len()
+		}
+
+		return true
+	})
+	ret := make([]byte, l)
+
+	r.Iter(0, func(bs []Rope) bool {
+		for _, r := range bs {
+			b := r.Bytes()
+			copy(ret[i:], b)
+			i += len(b)
 		}
 
 		return true
@@ -193,8 +203,8 @@ func (r *RopeRope) Split(n int) (out1, out2 *RopeRope) {
 		if n > len(r.content) { // offset overflow
 			n = len(r.content)
 		}
-		out1 = NewFromBytesRope(r.content[:n])
-		out2 = NewFromBytesRope(r.content[n:])
+		out1 = NewFromRope(r.content[:n])
+		out2 = NewFromRope(r.content[n:])
 	} else { // non leaf
 		var r1 *RopeRope
 		if n >= r.weight { // at right subtree
@@ -210,7 +220,7 @@ func (r *RopeRope) Split(n int) (out1, out2 *RopeRope) {
 
 func (r *RopeRope) Insert(n int, bs []Rope) *RopeRope {
 	r1, r2 := r.Split(n)
-	return r1.Concat(NewFromBytesRope(bs)).Concat(r2)
+	return r1.Concat(NewFromRope(bs)).Concat(r2)
 }
 
 func (r *RopeRope) Delete(n, l int) *RopeRope {
