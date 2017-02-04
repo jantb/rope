@@ -230,22 +230,22 @@ func (r *RopeRope) Delete(n, l int) *RopeRope {
 }
 
 // Sub returns a substring of the rope
-// func (r *RopeRope) Sub(n, l int) []Rope {
-// 	ret := make([]byte, l)
-// 	i := 0
-// 	r.Iter(n, func(bs []Rope) bool {
-// 		if l >= len(bs) {
-// 			copy(ret[i:], bs)
-// 			i += len(bs)
-// 			l -= len(bs)
-// 			return true
-// 		}
-// 		copy(ret[i:], bs[:l])
-// 		i += l
-// 		return false
-// 	})
-// 	return ret[:i]
-// }
+func (r *RopeRope) Sub(n, l int) []Rope {
+	ret := make([]Rope, l)
+	i := 0
+	r.Iter(n, func(bs []Rope) bool {
+		if l >= len(bs) {
+			copy(ret[i:], bs)
+			i += len(bs)
+			l -= len(bs)
+			return true
+		}
+		copy(ret[i:], bs[:l])
+		i += l
+		return false
+	})
+	return ret[:i]
+}
 
 func (r *RopeRope) Iter(offset int, fn func([]Rope) bool) bool {
 	if r == nil {
