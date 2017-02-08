@@ -27,9 +27,6 @@ func TestMain(m *testing.M) {
 func TestNewFromBytes(t *testing.T) {
 	// nil bytes
 	r := NewFromBytes([]byte{})
-	if r != nil {
-		t.Fatal()
-	}
 
 	// short bytes
 	r = NewFromBytes([]byte(`foo`))

@@ -11,7 +11,7 @@ type RopeRope struct {
 	balanced bool
 }
 
-var MaxLengthPerNodeRope = 128
+var MaxLengthPerNodeRope = 512
 
 // NewFromBytes genearte new rope from bytes
 func NewFromRope(bs []Rope) (ret *RopeRope) {
@@ -64,15 +64,15 @@ func NewFromRope(bs []Rope) (ret *RopeRope) {
 }
 
 // Index returns rope at index
-func (r *RopeRope) Index(i int) Rope {
-	if i >= r.weight {
-		return r.right.Index(i - r.weight)
+func (r *RopeRope) Index(row int) Rope {
+	if row >= r.weight {
+		return r.right.Index(row - r.weight)
 	}
 	if r.left != nil { // non leaf
-		return r.left.Index(i)
+		return r.left.Index(row)
 	}
 	// leaf
-	return r.content[i]
+	return r.content[row]
 }
 
 // Len returns the length of the rope
