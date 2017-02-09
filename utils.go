@@ -60,6 +60,13 @@ func reversedRopes(bs []Rope) []Rope {
 	}
 	return ret
 }
+func reversedrunes(bs []rune) []rune {
+	ret := make([]rune, len(bs))
+	for i, b := range bs {
+		ret[len(bs)-i-1] = b
+	}
+	return ret
+}
 func reversedInterfaces(bs []interface{}) []interface{} {
 	ret := make([]interface{}, len(bs))
 	for i, b := range bs {
