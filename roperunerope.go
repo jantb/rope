@@ -2,43 +2,37 @@ package rope
 
 import "math"
 
-type RuneRope struct {
+type RopeRuneRope struct {
 	height   int
 	weight   int
-	left     *RuneRope
-	right    *RuneRope
-	content  []rune
+	left     *RopeRuneRope
+	right    *RopeRuneRope
+	content  []RuneRope
 	balanced bool
 }
 
-var MaxLengthPerNodeRune = 128
+var MaxLengthPerNodeRuneRope = 512
 
-// NewFromrunes genearte new Runerope from runes
-func NewFromRunes(bs []rune) (ret *RuneRope) {
+// NewFromBytes genearte new rope from bytes
+func NewFromRuneRope(bs []RuneRope) (ret *RopeRuneRope) {
 	if len(bs) == 0 {
-		ret = &RuneRope{
-			height:   0,
-			weight:   0,
-			content:  bs,
-			balanced: false,
-		}
-		return
+		return nil
 	}
-	slots := make([]*RuneRope, 32)
+	slots := make([]*RopeRuneRope, 32)
 	var slotIndex int
-	var r *RuneRope
-	for blockIndex := 0; blockIndex < len(bs)/MaxLengthPerNodeRune; blockIndex++ {
-		r = &RuneRope{
+	var r *RopeRuneRope
+	for blockIndex := 0; blockIndex < len(bs)/MaxLengthPerNodeRope; blockIndex++ {
+		r = &RopeRuneRope{
 			height:   1,
-			weight:   MaxLengthPerNodeRune,
-			content:  bs[blockIndex*MaxLengthPerNodeRune : (blockIndex+1)*MaxLengthPerNodeRune],
+			weight:   MaxLengthPerNodeRope,
+			content:  bs[blockIndex*MaxLengthPerNodeRope : (blockIndex+1)*MaxLengthPerNodeRope],
 			balanced: true,
 		}
 		slotIndex = 0
 		for slots[slotIndex] != nil {
-			r = &RuneRope{
+			r = &RopeRuneRope{
 				height:   slotIndex + 2,
-				weight:   (1 << uint(slotIndex)) * MaxLengthPerNodeRune,
+				weight:   (1 << uint(slotIndex)) * MaxLengthPerNodeRope,
 				left:     slots[slotIndex],
 				right:    r,
 				balanced: true,
@@ -48,9 +42,9 @@ func NewFromRunes(bs []rune) (ret *RuneRope) {
 		}
 		slots[slotIndex] = r
 	}
-	tailStart := len(bs) / MaxLengthPerNodeRune * MaxLengthPerNodeRune
+	tailStart := len(bs) / MaxLengthPerNodeRope * MaxLengthPerNodeRope
 	if tailStart < len(bs) {
-		ret = &RuneRope{
+		ret = &RopeRuneRope{
 			height:   1,
 			weight:   len(bs) - tailStart,
 			content:  bs[tailStart:],
@@ -69,40 +63,54 @@ func NewFromRunes(bs []rune) (ret *RuneRope) {
 	return
 }
 
-// Index returns byt at index
-func (r *RuneRope) Index(i int) rune {
-	if i >= r.weight {
-		return r.right.Index(i - r.weight)
+// Index returns rope at index
+func (r *RopeRuneRope) Index(row int) RuneRope {
+	if row >= r.weight {
+		return r.right.Index(row - r.weight)
 	}
 	if r.left != nil { // non leaf
-		return r.left.Index(i)
+		return r.left.Index(row)
 	}
 	// leaf
-	return r.content[i]
+	return r.content[row]
 }
 
-// Len returns the length of the Runerope
-func (r *RuneRope) Len() int {
+// Len returns the length of the rope
+func (r *RopeRuneRope) Len() int {
 	if r == nil {
 		return 0
 	}
 	return r.weight + r.right.Len()
 }
 
-// runes return all the runes in the Runerope
-func (r *RuneRope) runes() []rune {
-	ret := make([]rune, r.Len())
+// Bytes return all the bytes in the rope
+func (r *RopeRuneRope) Bytes() []byte {
 	i := 0
-	r.Iter(0, func(bs []rune) bool {
-		copy(ret[i:], bs)
-		i += len(bs)
+	l := 0
+	r.Iter(0, func(bs []RuneRope) bool {
+		for _, r := range bs {
+			l += r.Len()
+		}
+
+		return true
+	})
+	ret := make([]byte, l)
+
+	r.Iter(0, func(bs []RuneRope) bool {
+		for _, r := range bs {
+			b := []byte(string(r.runes()))
+			copy(ret[i:], b)
+			i += len(b)
+		}
+
 		return true
 	})
 	return ret
 }
 
-func (r *RuneRope) Concat(r2 *RuneRope) (ret *RuneRope) {
-	ret = &RuneRope{
+// Concat concatinates two RopeRuneRopes
+func (r *RopeRuneRope) Concat(r2 *RopeRuneRope) (ret *RopeRuneRope) {
+	ret = &RopeRuneRope{
 		weight: r.Len(),
 		left:   r,
 		right:  r2,
@@ -121,7 +129,7 @@ func (r *RuneRope) Concat(r2 *RuneRope) (ret *RuneRope) {
 	ret.height++
 	// check and rebalance
 	if !ret.balanced {
-		l := int((math.Ceil(math.Log2(float64((ret.Len()/MaxLengthPerNodeRune)+1))) + 1) * 1.5)
+		l := int((math.Ceil(math.Log2(float64((ret.Len()/MaxLengthPerNodeRope)+1))) + 1) * 1.5)
 		if ret.height > l {
 			ret = ret.rebalance()
 		}
@@ -129,31 +137,31 @@ func (r *RuneRope) Concat(r2 *RuneRope) (ret *RuneRope) {
 	return
 }
 
-func (r *RuneRope) rebalance() (ret *RuneRope) {
-	var currentrunes []rune
-	slots := make([]*RuneRope, 32)
-	r.iterNodes(func(node *RuneRope) bool {
-		var balancedNode *RuneRope
+func (r *RopeRuneRope) rebalance() (ret *RopeRuneRope) {
+	var currentBytes []RuneRope
+	slots := make([]*RopeRuneRope, 32)
+	r.iterNodes(func(node *RopeRuneRope) bool {
+		var balancedNode *RopeRuneRope
 		iterSubNodes := true
-		if len(currentrunes) == 0 && node.balanced { // balanced, insert to slots
+		if len(currentBytes) == 0 && node.balanced { // balanced, insert to slots
 			balancedNode = node
 			iterSubNodes = false
-		} else { // collect runes
-			currentrunes = append(currentrunes, node.content...)
-			if len(currentrunes) >= MaxLengthPerNodeRune { // a full leaf
-				balancedNode = &RuneRope{
+		} else { // collect bytes
+			currentBytes = append(currentBytes, node.content...)
+			if len(currentBytes) >= MaxLengthPerNodeRope { // a full leaf
+				balancedNode = &RopeRuneRope{
 					height:   1,
-					weight:   MaxLengthPerNodeRune,
+					weight:   MaxLengthPerNodeRope,
 					balanced: true,
-					content:  currentrunes[:MaxLengthPerNodeRune],
+					content:  currentBytes[:MaxLengthPerNodeRope],
 				}
-				currentrunes = currentrunes[MaxLengthPerNodeRune:]
+				currentBytes = currentBytes[MaxLengthPerNodeRope:]
 			}
 		}
 		if balancedNode != nil {
 			slotIndex := balancedNode.height - 1
 			for slots[slotIndex] != nil {
-				balancedNode = &RuneRope{
+				balancedNode = &RopeRuneRope{
 					height:   balancedNode.height + 1,
 					weight:   slots[slotIndex].Len(),
 					left:     slots[slotIndex],
@@ -167,12 +175,12 @@ func (r *RuneRope) rebalance() (ret *RuneRope) {
 		}
 		return iterSubNodes
 	})
-	if len(currentrunes) > 0 {
-		ret = &RuneRope{
+	if len(currentBytes) > 0 {
+		ret = &RopeRuneRope{
 			height:   1,
-			weight:   len(currentrunes),
+			weight:   len(currentBytes),
 			balanced: false,
-			content:  currentrunes,
+			content:  currentBytes,
 		}
 	}
 	for _, c := range slots {
@@ -187,7 +195,7 @@ func (r *RuneRope) rebalance() (ret *RuneRope) {
 	return
 }
 
-func (r *RuneRope) Split(n int) (out1, out2 *RuneRope) {
+func (r *RopeRuneRope) Split(n int) (out1, out2 *RopeRuneRope) {
 	if r == nil {
 		return
 	}
@@ -195,10 +203,10 @@ func (r *RuneRope) Split(n int) (out1, out2 *RuneRope) {
 		if n > len(r.content) { // offset overflow
 			n = len(r.content)
 		}
-		out1 = NewFromRunes(r.content[:n])
-		out2 = NewFromRunes(r.content[n:])
+		out1 = NewFromRuneRope(r.content[:n])
+		out2 = NewFromRuneRope(r.content[n:])
 	} else { // non leaf
-		var r1 *RuneRope
+		var r1 *RopeRuneRope
 		if n >= r.weight { // at right subtree
 			r1, out2 = r.right.Split(n - r.weight)
 			out1 = r.left.Concat(r1)
@@ -210,37 +218,36 @@ func (r *RuneRope) Split(n int) (out1, out2 *RuneRope) {
 	return
 }
 
-func (r *RuneRope) Insert(n int, bs []rune) *RuneRope {
+func (r *RopeRuneRope) Insert(n int, bs []RuneRope) *RopeRuneRope {
 	r1, r2 := r.Split(n)
-	return r1.Concat(NewFromRunes(bs)).Concat(r2)
+	return r1.Concat(NewFromRuneRope(bs)).Concat(r2)
 }
 
-func (r *RuneRope) Delete(n, l int) *RuneRope {
+func (r *RopeRuneRope) Delete(n, l int) *RopeRuneRope {
 	r1, r2 := r.Split(n)
 	_, r2 = r2.Split(l)
 	return r1.Concat(r2)
 }
 
-// Sub returns a substring of the Runerope
-func (r *RuneRope) Sub(n, l int) []rune {
-	ret := make([]rune, l)
+// Sub returns a substring of the rope
+func (r *RopeRuneRope) Sub(n, l int) []RuneRope {
+	ret := make([]RuneRope, l)
 	i := 0
-	r.Iter(n, func(bs []rune) bool {
+	r.Iter(n, func(bs []RuneRope) bool {
 		if l >= len(bs) {
 			copy(ret[i:], bs)
 			i += len(bs)
 			l -= len(bs)
 			return true
-		} else {
-			copy(ret[i:], bs[:l])
-			i += l
-			return false
 		}
+		copy(ret[i:], bs[:l])
+		i += l
+		return false
 	})
 	return ret[:i]
 }
 
-func (r *RuneRope) Iter(offset int, fn func([]rune) bool) bool {
+func (r *RopeRuneRope) Iter(offset int, fn func([]RuneRope) bool) bool {
 	if r == nil {
 		return true
 	}
@@ -267,7 +274,7 @@ func (r *RuneRope) Iter(offset int, fn func([]rune) bool) bool {
 	return true
 }
 
-func (r *RuneRope) IterBackward(offset int, fn func([]rune) bool) bool {
+func (r *RopeRuneRope) IterBackward(offset int, fn func([]RuneRope) bool) bool {
 	if r == nil {
 		return true
 	}
@@ -276,7 +283,7 @@ func (r *RuneRope) IterBackward(offset int, fn func([]rune) bool) bool {
 		if len(content) == 0 {
 			return true
 		}
-		bs := reversedrunes(content)
+		bs := reversedRuneRopes(content)
 		if !fn(bs) {
 			return false
 		}
@@ -297,7 +304,7 @@ func (r *RuneRope) IterBackward(offset int, fn func([]rune) bool) bool {
 	return true
 }
 
-func (r *RuneRope) iterNodes(fn func(*RuneRope) bool) {
+func (r *RopeRuneRope) iterNodes(fn func(*RopeRuneRope) bool) {
 	if r == nil {
 		return
 	}
@@ -305,4 +312,12 @@ func (r *RuneRope) iterNodes(fn func(*RuneRope) bool) {
 		r.left.iterNodes(fn)
 		r.right.iterNodes(fn)
 	}
+}
+
+func (r *RopeRuneRope) IterRune(offset int, fn func(rune, int) bool) {
+	var bs []RuneRope
+	r.Iter(offset, func(slice []RuneRope) bool {
+		bs = append(bs, slice...)
+		return true
+	})
 }
