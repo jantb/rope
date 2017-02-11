@@ -98,7 +98,7 @@ func (r *RopeRuneRope) Bytes() []byte {
 
 	r.Iter(0, func(bs []RuneRope) bool {
 		for _, r := range bs {
-			b := []byte(string(r.runes()))
+			b := []byte(string(r.Runes()))
 			copy(ret[i:], b)
 			i += len(b)
 		}

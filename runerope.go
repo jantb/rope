@@ -69,7 +69,7 @@ func NewFromRunes(bs []rune) (ret *RuneRope) {
 	return
 }
 
-// Index returns byt at index
+// Index returns byte at index
 func (r *RuneRope) Index(i int) rune {
 	if i >= r.weight {
 		return r.right.Index(i - r.weight)
@@ -89,8 +89,8 @@ func (r *RuneRope) Len() int {
 	return r.weight + r.right.Len()
 }
 
-// runes return all the runes in the Runerope
-func (r *RuneRope) runes() []rune {
+// Runes return all the runes in the Runerope
+func (r *RuneRope) Runes() []rune {
 	ret := make([]rune, r.Len())
 	i := 0
 	r.Iter(0, func(bs []rune) bool {
